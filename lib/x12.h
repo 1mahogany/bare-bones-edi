@@ -63,14 +63,11 @@ typedef struct {
 
     EDISegment* seg;
     EDIStatus status;
-    int delim_is_set;
 
 } EDIFile;
 
 typedef EDISegment EDIComposite;
 typedef EDIElement EDIComponent;
-
-EDIStatus edi_set_delim(EDIFile* edi, char elm, char sub, char seg);
 
 EDIStatus edi_next_segment(EDIFile* edi, EDISegment** seg);
 EDIStatus edi_seek_segment(EDIFile* edi, EDISegment** seg, EDISegmentType type);
@@ -79,7 +76,6 @@ EDIStatus edi_get_component(EDISegment* seg, EDIComponent* comp, int n);
 
 int edi_memcpy_element(EDISegment* seg, int n, void* buffer, size_t s);
 int edi_memcmp_element(EDISegment* seg, int n, void* buffer, size_t s);
-void edi_file_free(EDIFile* edi);
 
 #define EDI_COMPONENT_AUTO() &(EDIComponent) \
 {                                            \
@@ -101,7 +97,6 @@ void edi_file_free(EDIFile* edi);
     .n_bytes = 0,                      \
     .seg = EDI_COMPOSITE_AUTO(),       \
     .status = EDI_UNINITIALIZED,       \
-    .delim_is_set = 0                  \
 }
 
 // Reference an existing buffer that stores an EDI file
@@ -111,9 +106,8 @@ void edi_file_free(EDIFile* edi);
     .n_bytes = Y,                      \
     .seg = EDI_COMPOSITE_AUTO(),       \
     .status = EDI_UNINITIALIZED,       \
-    .delim_is_set = 0                  \
 }
 
-#define EDI_FILE_FREE(X) edi_file_free(X)
+#define EDI_FILE_FREE(X) free((X)->buffer);
 
 #endif // BARE_BONES_EDI_READER_H

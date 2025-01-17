@@ -26,30 +26,23 @@
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 
-static inline EDIStatus edi_detect_delim(EDIFile* edi) {
+static EDIStatus edi_set_delim(EDIFile* edi) {
 
-    char* b = edi->buffer;
+    // automatic detection requires standard ISA segment (106 bytes)
+    // files with fewer than 106 bytes are invalid, cannot proceed
 
-    /**
-     * Allow manually setting delimiters prior to initialization.
-     * There are EDI writers that do not conform to standard ISA segment.
-     * If delimiters have been manually set, do nothing and return.
-     */
-    if (edi->delim_is_set) { return EDI_OK; }
+    if (edi->n_bytes > 105) {
 
-    /**
-     * If delimiters have not been manually set, use automatic detection
-     * Automatic detection requires standard ISA segment (106 bytes)
-     * Files with less than 106 bytes are invalid, cannot be processed
-     */
-    else if (edi->n_bytes < 106) { return EDI_INVALID_FILE; }
+        EDISegment* s = edi->seg;
+        const char* b = edi->buffer;
 
-    /**
-     * Index 103 (104th byte) is the element delimiter
-     * Index 104 (105th byte) is the sub-element delimiter
-     * Index 105 (106th byte) is the segment delimiter
-     */
-    else { return edi_set_delim(edi, b[103], b[104], b[105]); }
+        s->delim_elm = b[103];
+        s->delim_sub = b[104];
+        s->delim_seg = b[105];
+
+        return EDI_OK;
+
+    } else { return EDI_INVALID_FILE; }
 
 }
 
@@ -58,8 +51,14 @@ static EDIStatus edi_read_file(EDIFile* edi) {
     // do nothing if EDIFile is already initialized
     if (edi->status != EDI_UNINITIALIZED) { return edi->status; }
 
-    // if EDIFile uses a reference buffer, run delimiter settings only
-    if (edi->n_bytes) { return edi->status = edi_detect_delim(edi); }
+    // if EDIFile uses a reference buffer, set delimiters only
+    if (edi->n_bytes) {
+
+        edi->seg->cursor = edi->buffer - 1;
+        edi->status = edi_set_delim(edi);
+        return edi->status;
+
+    }
 
     // before initialization, edi->buffer stores the file name
     FILE* f = fopen(edi->buffer, "r");
@@ -81,24 +80,13 @@ static EDIStatus edi_read_file(EDIFile* edi) {
         fread(edi->buffer, 1, edi->n_bytes, f);
 
         edi->seg->cursor = edi->buffer - 1;
-        edi->status = edi_detect_delim(edi);
+        edi->status = edi_set_delim(edi);
 
     } else { edi->status = EDI_MALLOC_FAILED; }
 
     // TODO: error checking on fclose?
     fclose(f);
     return edi->status;
-
-}
-
-EDIStatus edi_set_delim(EDIFile* edi, char elm, char sub, char seg) {
-
-    edi->seg->delim_elm = elm;
-    edi->seg->delim_sub = sub;
-    edi->seg->delim_seg = seg;
-
-    edi->delim_is_set = 1;
-    return EDI_OK;
 
 }
 
@@ -241,5 +229,3 @@ int edi_memcmp_element(EDISegment* seg, int n, void* buffer, size_t s) {
     } else { return -1; } // error signal
 
 }
-
-void edi_file_free(EDIFile* edi) { free(edi->buffer); }
