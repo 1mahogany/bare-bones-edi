@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BARE_BONES_EDI_READER_H
-#define BARE_BONES_EDI_READER_H
+#ifndef BARE_BONES_EDI_X12_H
+#define BARE_BONES_EDI_X12_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -34,9 +34,6 @@ typedef enum {
     EDI_INVALID_INDEX,
     EDI_UNINITIALIZED,
     EDI_MALLOC_FAILED,
-
-    EDI_MEMCMP_T,
-    EDI_MEMCMP_F,
 
 } EDIStatus;
 

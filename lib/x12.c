@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "reader.h"
+
+#include "x12.h"
 
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
