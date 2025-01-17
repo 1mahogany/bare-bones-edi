@@ -5,6 +5,9 @@
 
 #include "csv.h"
 
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
+#define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
+
 static const int csv_col_element[] = {
 
     [CSV_COL_BPR_PAYMENT_DATE]   = 15,
@@ -76,13 +79,20 @@ static int csv_memcpy_element(EDISegment* seg, CSVRow* row, CSVCol col) {
 
 }
 
+static int csv_memcmp_element(EDISegment* seg, int n, char* s) {
+
+    size_t size = strlen(s);
+    return edi_memcmp_element(seg, n, s, size);
+
+}
+
 static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     switch (seg->type) {
 
     case EDI_SEGMENT_GS:
     {
-        const int r = edi_memcmp_element(seg, 7, "005010X221A1", 12);
+        const int r = csv_memcmp_element(seg, 7, "005010X221A1");
         return r == 0 ? CSV_SKIPPED_SEGMENT : CSV_UNKNOWN_RELEASE;
     }
     case EDI_SEGMENT_BPR:
@@ -97,12 +107,12 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     case EDI_SEGMENT_N1:
 
-        if (edi_memcmp_element(seg, 0, "PR", 2) == 0) {
+        if (csv_memcmp_element(seg, 0, "PR") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_N1_PAYER);
             return CSV_OK;
 
-        } else if (edi_memcmp_element(seg, 0, "PE", 2) == 0) {
+        } else if (csv_memcmp_element(seg, 0, "PE") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_N1_PAYEE);
             csv_memcpy_element(seg, row, CSV_COL_N1_NPI);
@@ -119,7 +129,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     case EDI_SEGMENT_NM1:
         
-        if (edi_memcmp_element(seg, 0, "QC", 2) == 0) {
+        if (csv_memcmp_element(seg, 0, "QC") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_NM1_LAST_NAME);
             csv_memcpy_element(seg, row, CSV_COL_NM1_FIRST_NAME);
@@ -150,18 +160,18 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
     }
     case EDI_SEGMENT_DTM:
 
-        if (edi_memcmp_element(seg, 0, "472", 3) == 0) {
+        if (csv_memcmp_element(seg, 0, "472") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_DTM_DATE_FROM);
             csv_memcpy_element(seg, row, CSV_COL_DTM_DATE_TO);
             return CSV_OK;
 
-        } else if (edi_memcmp_element(seg, 0, "150", 3) == 0) {
+        } else if (csv_memcmp_element(seg, 0, "150") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_DTM_DATE_FROM);
             return CSV_OK;
 
-        } else if (edi_memcmp_element(seg, 0, "151", 3) == 0) {
+        } else if (csv_memcmp_element(seg, 0, "151") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_DTM_DATE_TO);
             return CSV_OK;
@@ -177,7 +187,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     case EDI_SEGMENT_REF:
 
-        if (edi_memcmp_element(seg, 0, "6R", 2) == 0) {
+        if (csv_memcmp_element(seg, 0, "6R") == 0) {
 
             csv_memcpy_element(seg, row, CSV_COL_REF_LINE_ITEM);
             return CSV_OK;
@@ -186,7 +196,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     case EDI_SEGMENT_LQ:
 
-        if (edi_memcmp_element(seg, 0, "HE", 2) == 0) {
+        if (csv_memcmp_element(seg, 0, "HE") == 0) {
 
             //* when there are more than 4 remarks (consecutive LQ segments),
             //* additional LQ segments will overflow to ZZZ and be discarded

@@ -40,6 +40,8 @@ static EDIStatus edi_set_delim(EDIFile* edi) {
         s->delim_sub = b[104];
         s->delim_seg = b[105];
 
+        // set starting cursor position
+        s->cursor = edi->buffer - 1;
         return EDI_OK;
 
     } else { return EDI_INVALID_FILE; }
@@ -52,13 +54,7 @@ static EDIStatus edi_read_file(EDIFile* edi) {
     if (edi->status != EDI_UNINITIALIZED) { return edi->status; }
 
     // if EDIFile uses a reference buffer, set delimiters only
-    if (edi->n_bytes) {
-
-        edi->seg->cursor = edi->buffer - 1;
-        edi->status = edi_set_delim(edi);
-        return edi->status;
-
-    }
+    if (edi->n_bytes) { return edi->status = edi_set_delim(edi); }
 
     // before initialization, edi->buffer stores the file name
     FILE* f = fopen(edi->buffer, "r");
@@ -78,8 +74,6 @@ static EDIStatus edi_read_file(EDIFile* edi) {
 
         // TODO: check bytes read and feof(f)
         fread(edi->buffer, 1, edi->n_bytes, f);
-
-        edi->seg->cursor = edi->buffer - 1;
         edi->status = edi_set_delim(edi);
 
     } else { edi->status = EDI_MALLOC_FAILED; }
