@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BARE_BONES_EDI_X12_H
-#define BARE_BONES_EDI_X12_H
+#ifndef BARE_BONES_EDI_READER_H
+#define BARE_BONES_EDI_READER_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,12 +28,22 @@
 
 typedef enum {
 
+    EDI_X12,
+    EDI_HIPAA,
+    EDI_VICS,
+
+} EDIStandard;
+
+typedef enum {
+
     EDI_OK,
     EDI_EOF,
     EDI_INVALID_FILE,
     EDI_INVALID_INDEX,
     EDI_UNINITIALIZED,
     EDI_MALLOC_FAILED,
+    EDI_PARTIAL_FREAD,
+    EDI_FSTREAM_ERROR,
 
 } EDIStatus;
 
@@ -53,6 +63,7 @@ typedef struct {
     char delim_elm;
     char delim_sub;
     char delim_seg;
+    char delim_esc;
 
 } EDISegment;
 
@@ -60,9 +71,11 @@ typedef struct {
 
     char* buffer;
     size_t n_bytes;
+    EDIStandard std;
 
     EDISegment* seg;
     EDIStatus status;
+    const char* file;
 
 } EDIFile;
 
@@ -87,25 +100,18 @@ int edi_memcmp_element(EDISegment* seg, int n, void* buffer, size_t s);
 {                                            \
     .cursor = NULL,                          \
     .offset = {0},                           \
-    .type = EDI_SEGMENT_ZZZ                  \
+    .type = 0                                \
 }
 
 // Initialize a new buffer from reading a file
-#define EDI_FILE_INIT(X)    &(EDIFile) \
+#define EDI_FILE_INIT(X, Y) &(EDIFile) \
 {                                      \
-    .buffer = X,                       \
+    .buffer = NULL,                    \
     .n_bytes = 0,                      \
+    .std = Y,                          \
     .seg = EDI_COMPOSITE_AUTO(),       \
     .status = EDI_UNINITIALIZED,       \
-}
-
-// Reference an existing buffer that stores an EDI file
-#define EDI_FILE_AUTO(X, Y) &(EDIFile) \
-{                                      \
-    .buffer = X,                       \
-    .n_bytes = Y,                      \
-    .seg = EDI_COMPOSITE_AUTO(),       \
-    .status = EDI_UNINITIALIZED,       \
+    .file = X                          \
 }
 
 #define EDI_FILE_FREE(X) free((X)->buffer);

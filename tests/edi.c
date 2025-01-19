@@ -11,8 +11,8 @@ int main(int argc, char** argv) {
         
     } else {
 
-        EDIFile* edi = EDI_FILE_INIT(argv[1]);
-        csv_parse_file(edi,stdout);
+        EDIFile* edi = EDI_FILE_INIT(argv[1], EDI_X12);
+        csv_parse_file(edi, stdout);
         EDI_FILE_FREE(edi);
 
         return EXIT_SUCCESS;

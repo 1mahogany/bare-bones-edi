@@ -21,12 +21,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "x12.h"
+#include "reader.h"
 
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 
-static EDIStatus edi_set_delim(EDIFile* edi) {
+static EDIStatus x12_set_delim(EDIFile* edi) {
 
     // automatic detection requires standard ISA segment (106 bytes)
     // files with fewer than 106 bytes are invalid, cannot proceed
@@ -39,6 +39,7 @@ static EDIStatus edi_set_delim(EDIFile* edi) {
         s->delim_elm = b[103];
         s->delim_sub = b[104];
         s->delim_seg = b[105];
+        s->delim_esc = 0; // X12 does not support escape characters
 
         // set starting cursor position
         s->cursor = edi->buffer - 1;
@@ -53,34 +54,27 @@ static EDIStatus edi_read_file(EDIFile* edi) {
     // do nothing if EDIFile is already initialized
     if (edi->status != EDI_UNINITIALIZED) { return edi->status; }
 
-    // if EDIFile uses a reference buffer, set delimiters only
-    if (edi->n_bytes) { return edi->status = edi_set_delim(edi); }
+    struct stat s;
+    if (stat(edi->file, &s) == 0) { edi->n_bytes = s.st_size; }
+    else { return edi->status = EDI_INVALID_FILE; }
 
-    // before initialization, edi->buffer stores the file name
-    FILE* f = fopen(edi->buffer, "r");
+    FILE* f = fopen(edi->file, "r");
 
-    if (f) {
-
-        // TODO: error checking on stat?
-        struct stat s;
-        stat(edi->buffer, &s);
-        edi->n_bytes = (size_t)s.st_size;
-
-        edi->buffer = malloc(edi->n_bytes);
-
-    } else { return edi->status = EDI_INVALID_FILE; }
+    if (f) { edi->buffer = malloc(edi->n_bytes); }
+    else { return edi->status = EDI_FSTREAM_ERROR; }
 
     if (edi->buffer) {
 
-        // TODO: check bytes read and feof(f)
-        fread(edi->buffer, 1, edi->n_bytes, f);
-        edi->status = edi_set_delim(edi);
+        size_t n = fread(edi->buffer, 1, edi->n_bytes, f);
+
+        // fread is complete if n equals n_bytes
+        if (n < edi->n_bytes) { edi->status = EDI_PARTIAL_FREAD; }
+        else { edi->status = x12_set_delim(edi); }
 
     } else { edi->status = EDI_MALLOC_FAILED; }
 
-    // TODO: error checking on fclose?
-    fclose(f);
-    return edi->status;
+    if (fclose(f) == 0) { return edi->status; }
+    else { return edi->status = EDI_FSTREAM_ERROR; }
 
 }
 
@@ -111,7 +105,9 @@ EDIStatus edi_next_segment(EDIFile* edi, EDISegment** seg) {
 
         char c = s->cursor[i];
 
-        if (c == s->delim_elm) { s->offset[e] = i; e++; }
+        // skip the next byte upon reaching an escape character
+        if      (c == s->delim_esc) { i++; }
+        else if (c == s->delim_elm) { s->offset[e] = i; e++; }
         else if (c == s->delim_seg) { break; }
 
     }
@@ -124,6 +120,7 @@ EDIStatus edi_next_segment(EDIFile* edi, EDISegment** seg) {
 
 }
 
+// TODO: maybe write a dedicated algorithm here?
 EDIStatus edi_seek_segment(EDIFile* edi, EDISegment** seg, EDISegmentType type) {
 
     while (edi_next_segment(edi, seg) == EDI_OK) {
@@ -146,6 +143,8 @@ EDIStatus edi_get_composite(EDISegment* seg, EDIComposite* comp, int n) {
         comp->delim_elm = seg->delim_elm;
         comp->delim_sub = seg->delim_sub;
         comp->delim_seg = seg->delim_seg;
+        comp->delim_esc = seg->delim_esc;
+
         comp->type = seg->type;
         
     } else { return EDI_INVALID_INDEX; }
@@ -162,16 +161,20 @@ EDIStatus edi_get_composite(EDISegment* seg, EDIComposite* comp, int n) {
     // offset[0] is always 0, no need to include in the loop
     int64_t i = 1;
     int64_t e = 1;
+    EDIComposite* s = comp;
 
     for (; i < n_bytes && e < MAX_N_ELEM; i++) {
 
-        const bool b = comp->cursor[i] == comp->delim_sub;
-        if (b) { comp->offset[e] = i; e++; }
+        char c = s->cursor[i];
+
+        // skip the next byte upon reaching an escape character
+        if      (c == s->delim_esc) { i++; }
+        else if (c == s->delim_sub) { s->offset[e] = i; e++; }
 
     }
 
     // Fill any unused offsets
-    for (; e < MAX_N_ELEM; e++) { comp->offset[e] = i; }
+    for (; e < MAX_N_ELEM; e++) { s->offset[e] = i; }
     return EDI_OK;
 
 }
@@ -190,6 +193,7 @@ EDIStatus edi_get_component(EDISegment* seg, EDIComponent* comp, int n) {
 
 }
 
+// TODO: implement support for escape character
 int edi_memcpy_element(EDISegment* seg, int n, void* buffer, size_t s) {
 
     EDIComponent* comp = EDI_COMPONENT_AUTO();
@@ -207,6 +211,7 @@ int edi_memcpy_element(EDISegment* seg, int n, void* buffer, size_t s) {
 
 }
 
+// TODO: implement support for escape character
 int edi_memcmp_element(EDISegment* seg, int n, void* buffer, size_t s) {
 
     EDIComponent* comp = EDI_COMPONENT_AUTO();

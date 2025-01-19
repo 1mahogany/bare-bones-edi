@@ -3,7 +3,7 @@
 #define RAID_CSV_H
 
 #include <stdint.h>
-#include "x12.h"
+#include "reader.h"
 
 #ifndef RAID_H
 #define MAX_N_COLS 32

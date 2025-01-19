@@ -90,22 +90,22 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
     switch (seg->type) {
 
-    case EDI_SEGMENT_GS:
+    case X12_SEGMENT_GS:
     {
         const int r = csv_memcmp_element(seg, 7, "005010X221A1");
         return r == 0 ? CSV_SKIPPED_SEGMENT : CSV_UNKNOWN_RELEASE;
     }
-    case EDI_SEGMENT_BPR:
+    case X12_SEGMENT_BPR:
 
         csv_memcpy_element(seg, row, CSV_COL_BPR_PAYMENT_DATE);
         return CSV_OK;
 
-    case EDI_SEGMENT_TRN:
+    case X12_SEGMENT_TRN:
 
         csv_memcpy_element(seg, row, CSV_COL_TRN_CHECK_NUMBER);
         return CSV_OK;
 
-    case EDI_SEGMENT_N1:
+    case X12_SEGMENT_N1:
 
         if (csv_memcmp_element(seg, 0, "PR") == 0) {
 
@@ -120,14 +120,14 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
         } else { return CSV_SKIPPED_SEGMENT; }
 
-    case EDI_SEGMENT_CLP:
+    case X12_SEGMENT_CLP:
 
         csv_memcpy_element(seg, row, CSV_COL_CLP_PCN);
         csv_memcpy_element(seg, row, CSV_COL_CLP_ICN);
         csv_memcpy_element(seg, row, CSV_COL_CLP_MRN);
         return CSV_OK;
 
-    case EDI_SEGMENT_NM1:
+    case X12_SEGMENT_NM1:
         
         if (csv_memcmp_element(seg, 0, "QC") == 0) {
 
@@ -139,7 +139,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
         } else { return CSV_SKIPPED_SEGMENT; }
 
-    case EDI_SEGMENT_SVC:
+    case X12_SEGMENT_SVC:
     {
         EDIComposite* comp = EDI_COMPOSITE_AUTO();
 
@@ -158,7 +158,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
         csv_memcpy_element(seg, row, CSV_COL_SVC_ALLOW_UNITS);
         return CSV_OK;
     }
-    case EDI_SEGMENT_DTM:
+    case X12_SEGMENT_DTM:
 
         if (csv_memcmp_element(seg, 0, "472") == 0) {
 
@@ -178,14 +178,14 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
         } else { return CSV_SKIPPED_SEGMENT; }
 
-    case EDI_SEGMENT_CAS:
+    case X12_SEGMENT_CAS:
 
         csv_memcpy_element(seg, row, CSV_COL_CAS_GROUP_CODE);
         csv_memcpy_element(seg, row, CSV_COL_CAS_REASON_CODE);
         csv_memcpy_element(seg, row, CSV_COL_CAS_AMOUNT);
         return CSV_OK;
 
-    case EDI_SEGMENT_REF:
+    case X12_SEGMENT_REF:
 
         if (csv_memcmp_element(seg, 0, "6R") == 0) {
 
@@ -194,7 +194,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
         } else { return CSV_SKIPPED_SEGMENT; }
 
-    case EDI_SEGMENT_LQ:
+    case X12_SEGMENT_LQ:
 
         if (csv_memcmp_element(seg, 0, "HE") == 0) {
 
@@ -207,7 +207,7 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
         } else { return CSV_SKIPPED_SEGMENT; }
 
-    case EDI_SEGMENT_GE:
+    case X12_SEGMENT_GE:
     {
         // end of functional group loop
         return CSV_SKIPPED_SEGMENT;
@@ -240,7 +240,7 @@ int csv_parse_file(EDIFile* edi, FILE* out) {
         
         CSVStatus s = csv_parse_segment(seg, row);
         if (s != CSV_UNKNOWN_RELEASE) { continue; }
-        else { edi_seek_segment(edi, &seg, EDI_SEGMENT_GE); }
+        else { edi_seek_segment(edi, &seg, X12_SEGMENT_GE); }
         
     }
 
