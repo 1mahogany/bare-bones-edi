@@ -20,7 +20,6 @@
 #define BARE_BONES_EDI_READER_H
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "segment.h"
 
