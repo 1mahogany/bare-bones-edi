@@ -1,9 +1,8 @@
 
 #include <assert.h>
 #include <string.h>
-#include <stdio.h>
 
-#include "csv.h"
+#include "005010X221A1.h"
 
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
@@ -219,14 +218,12 @@ static CSVStatus csv_parse_segment(EDISegment* seg, CSVRow* row) {
 
 }
 
-int csv_parse_file(EDIFile* edi, FILE* out) {
+static int csv_parse_file(EDIFile* edi, CSVRow* row) {
 
     static_assert(CSV_COL_ZZZ < MAX_N_COLS);
     static_assert(sizeof(CSVRow) == 1024UL);
 
-    CSVRow* row = CSV_ROW_AUTO(out);
     EDISegment* seg = NULL;
-
     row->buffer[0] = '\n';
 
     for (CSVCol col = 1; col < CSV_COL_ZZZ; col++) {
@@ -246,5 +243,25 @@ int csv_parse_file(EDIFile* edi, FILE* out) {
 
     csv_fwrite_row(row);
     return 0;
+
+}
+
+int main(int argc, char** argv) {
+
+    if (argc < 2) {
+        
+        printf("missing input file\n");
+        return EXIT_FAILURE;
+        
+    } else {
+
+        EDIFile* edi = EDI_FILE_INIT(argv[1], EDI_X12);
+        CSVRow* row = CSV_ROW_AUTO(stdout);
+        csv_parse_file(edi, row);
+        EDI_FILE_FREE(edi);
+
+        return EXIT_SUCCESS;
+
+    }
 
 }

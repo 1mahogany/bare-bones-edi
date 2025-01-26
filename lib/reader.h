@@ -20,7 +20,7 @@
 #define BARE_BONES_EDI_READER_H
 
 #include <stdint.h>
-
+#include <stdlib.h>
 #include "segment.h"
 
 #define MAX_N_ELEM 32

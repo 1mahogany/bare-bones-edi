@@ -1,7 +1,7 @@
 
 src = $(wildcard *.c)
 obj = $(src:.c=.o)
-bin = edi
+bin = 005010X221A1
 
 CC = gcc
 CFLAGS = -std=c17 -O2 -Wall -Wextra -I../lib

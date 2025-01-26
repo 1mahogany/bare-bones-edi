@@ -1,11 +1,11 @@
 
-#ifndef RAID_CSV_H
-#define RAID_CSV_H
+#ifndef BARE_BONES_EDI_005010X221A1_H
+#define BARE_BONES_EDI_005010X221A1_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include "reader.h"
 
-#ifndef RAID_H
 #define MAX_N_COLS 32
 #define DELIM_COLS '*'
 
@@ -106,8 +106,4 @@ typedef struct {
     .output = X                             \
 }
 
-#endif // RAID_H
-
-int csv_parse_file(EDIFile* edi, FILE* out);
-
-#endif // RAID_CSV_H
+#endif
