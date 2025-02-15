@@ -76,6 +76,7 @@ static X12Status x12_parse_segment(EDISegment* seg, X12Stream* str) {
     case X12_SEGMENT_LX:
 
         str->loop = 2400;
+        if (str->inject) { str->seg->cursor[5] = 'K'; }
 
         x12_fwrite_str(str);
         break;
