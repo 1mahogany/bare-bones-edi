@@ -1,15 +1,16 @@
 
-src = 005010X222A1.c
-obj = $(src:.c=.o)
-bin = 005010X222A1
-
 CC = gcc
 CFLAGS = -std=c17 -O2 -Wall -Wextra -I../lib
 LDFLAGS = -L../lib -ledi
 
-$(bin): $(obj)
+all: 005010X221A1 005010X222A1
+
+005010X221A1: 005010X221A1.o
+	$(CC) $^ -o $@ $(LDFLAGS)
+
+005010X222A1: 005010X222A1.o
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 .PHONY: clean
 clean:
-	rm $(bin) $(obj)
+	rm 005010X221A1 005010X222A1 *.o
